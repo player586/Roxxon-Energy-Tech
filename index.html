@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Roxxon V10^25</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:#0a0a0a;
+color:white;
+}
+
+header{
+background:#121212;
+padding:15px;
+display:flex;
+flex-wrap:wrap;
+justify-content:space-between;
+}
+
+nav button{
+margin:4px;
+padding:8px 14px;
+}
+
+.section{
+display:none;
+padding:20px;
+}
+
+.active{
+display:block;
+}
+
+.card{
+background:#1d1d1d;
+padding:15px;
+margin:10px 0;
+border-radius:10px;
+}
+
+input,textarea{
+width:100%;
+padding:8px;
+margin:5px 0;
+}
+
+img{
+max-width:100%;
+border-radius:8px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+
+<h2>Roxxon V10²⁵</h2>
+
+<nav>
+<button onclick="ui.show('home')">Home</button>
+<button onclick="ui.show('news')">News</button>
+<button onclick="ui.show('store')">Store</button>
+<button onclick="ui.show('cart')">Cart</button>
+<button onclick="ui.show('community')">Community</button>
+<button onclick="ui.show('messages')">Messages</button>
+<button onclick="ui.show('weather')">Weather</button>
+<button onclick="ui.show('profile')">Profile</button>
+<button onclick="ui.show('admin')">Admin</button>
+</nav>
+
+</header>
+
+<!-- HOME -->
+<div id="home" class="section active">
+
+<h2>Welcome to Roxxon</h2>
+
+<p>A mega platform combining social, shopping and tools.</p>
+
+</div>
+
+<!-- NEWS -->
+<div id="news" class="section">
+
+<h2>News</h2>
+
+<input id="newsTitle" placeholder="Title">
+<textarea id="newsText" placeholder="Content"></textarea>
+
+<button onclick="news.post()">Post</button>
+
+<div id="newsFeed"></div>
+
+</div>
+
+<!-- STORE -->
+<div id="store" class="section">
+
+<h2>Store</h2>
+
+<input id="search" placeholder="Search product" oninput="store.render()">
+
+<input id="pname" placeholder="Product name">
+<input id="pprice" placeholder="Price">
+<input id="pimg" placeholder="Image URL">
+
+<button onclick="store.add()">Add Product</button>
+
+<div id="products"></div>
+
+</div>
+
+<!-- CART -->
+<div id="cart" class="section">
+
+<h2>Cart</h2>
+
+<div id="cartItems"></div>
+
+<h3 id="cartTotal"></h3>
+
+<button onclick="cart.checkout()">Checkout</button>
+
+</div>
+
+<!-- COMMUNITY -->
+<div id="community" class="section">
+
+<h2>Community</h2>
+
+<textarea id="postText"></textarea>
+
+<button onclick="community.post()">Post</button>
+
+<div id="posts"></div>
+
+</div>
+
+<!-- MESSAGES -->
+<div id="messages" class="section">
+
+<h2>Messages</h2>
+
+<input id="msgUser" placeholder="Send to user">
+<textarea id="msgText"></textarea>
+
+<button onclick="messages.send()">Send</button>
+
+<div id="messageList"></div>
+
+</div>
+
+<!-- WEATHER -->
+<div id="weather" class="section">
+
+<h2>Weather</h2>
+
+<input id="city">
+<button onclick="weather.check()">Check</button>
+
+<div id="weatherBox"></div>
+
+</div>
+
+<!-- PROFILE -->
+<div id="profile" class="section">
+
+<h2>Profile</h2>
+
+<input id="user" placeholder="Username">
+<input id="pass" type="password" placeholder="Password">
+
+<button onclick="auth.signup()">Sign Up</button>
+<button onclick="auth.login()">Login</button>
+
+<div id="profileBox"></div>
+
+</div>
+
+<!-- ADMIN -->
+<div id="admin" class="section">
+
+<h2>Admin</h2>
+
+<div class="card">
+
+<h3>Users</h3>
+<div id="adminUsers"></div>
+
+</div>
+
+<div class="card">
+
+<h3>Products</h3>
+<div id="adminProducts"></div>
+
+</div>
+
+</div>
+
+<script>
+
+/* DATABASE */
+
+const db = {
+users: JSON.parse(localStorage.users||"[]"),
+products: JSON.parse(localStorage.products||"[]"),
+news: JSON.parse(localStorage.news||"[]"),
+cart: JSON.parse(localStorage.cart||"[]"),
+posts: JSON.parse(localStorage.posts||"[]"),
+messages: JSON.parse(localStorage.messages||"[]"),
+currentUser: localStorage.currentUser || null,
+
+save(){
+localStorage.users = JSON.stringify(this.users)
+localStorage.products = JSON.stringify(this.products)
+localStorage.news = JSON.stringify(this.news)
+localStorage.cart = JSON.stringify(this.cart)
+localStorage.posts = JSON.stringify(this.posts)
+localStorage.messages = JSON.stringify(this.messages)
+localStorage.currentUser = this.currentUser
+}
+
+}
+
+/* UI */
+
+const ui = {
+show(id){
+document.querySelectorAll(".section")
+.forEach(s=>s.classList.remove("active"))
+
+document.getElementById(id).classList.add("active")
+}
+}
+
+/* AUTH */
+
+const auth = {
+
+signup(){
+db.users.push({u:user.value,p:pass.value})
+db.save()
+alert("Account created")
+},
+
+login(){
+
+let f=db.users.find(x=>x.u==user.value && x.p==pass.value)
+
+if(f){
+db.currentUser=user.value
+db.save()
+profileBox.innerHTML="Logged in as "+db.currentUser
+}else{
+alert("Wrong login")
+}
+
+}
+
+}
+
+/* NEWS */
+
+const news={
+
+post(){
+
+db.news.unshift({
+title:newsTitle.value,
+text:newsText.value
+})
+
+db.save()
+this.render()
+
+},
+
+render(){
+
+newsFeed.innerHTML=""
+
+db.news.forEach(n=>{
+
+newsFeed.innerHTML+=`
+
+<div class="card">
+
+<h3>${n.title}</h3>
+<p>${n.text}</p>
+
+</div>
+
+`
+
+})
+
+}
+
+}
+
+/* STORE */
+
+const store={
+
+add(){
+
+db.products.push({
+name:pname.value,
+price:parseFloat(pprice.value),
+img:pimg.value
+})
+
+db.save()
+this.render()
+
+},
+
+render(){
+
+let s=search.value.toLowerCase()
+
+products.innerHTML=""
+
+db.products.forEach((p,i)=>{
+
+if(p.name.toLowerCase().includes(s)){
+
+products.innerHTML+=`
+
+<div class="card">
+
+<img src="${p.img}">
+<h3>${p.name}</h3>
+<p>$${p.price}</p>
+
+<button onclick="cart.add(${i})">Add</button>
+
+</div>
+
+`
+
+}
+
+})
+
+}
+
+}
+
+/* CART */
+
+const cart={
+
+add(i){
+
+db.cart.push(db.products[i])
+db.save()
+this.render()
+
+},
+
+render(){
+
+cartItems.innerHTML=""
+let total=0
+
+db.cart.forEach((c,i)=>{
+
+total+=c.price
+
+cartItems.innerHTML+=`
+
+<div class="card">
+
+${c.name} - $${c.price}
+
+</div>
+
+`
+
+})
+
+cartTotal.innerText="Total: $"+total
+
+},
+
+checkout(){
+
+alert("Order placed!")
+db.cart=[]
+db.save()
+this.render()
+
+}
+
+}
+
+/* COMMUNITY */
+
+const community={
+
+post(){
+
+db.posts.unshift({
+user:db.currentUser||"Guest",
+text:postText.value
+})
+
+db.save()
+this.render()
+
+},
+
+render(){
+
+posts.innerHTML=""
+
+db.posts.forEach(p=>{
+
+posts.innerHTML+=`
+
+<div class="card">
+
+<b>${p.user}</b>
+<p>${p.text}</p>
+
+</div>
+
+`
+
+})
+
+}
+
+}
+
+/* MESSAGES */
+
+const messages={
+
+send(){
+
+db.messages.push({
+from:db.currentUser,
+to:msgUser.value,
+text:msgText.value
+})
+
+db.save()
+alert("Message sent")
+
+}
+
+}
+
+/* WEATHER */
+
+const weather={
+
+async check(){
+
+let res=await fetch(`https://wttr.in/${city.value}?format=j1`)
+let data=await res.json()
+
+let now=data.current_condition[0]
+
+weatherBox.innerHTML=`
+
+<div class="card">
+
+<h3>${city.value}</h3>
+
+<p>${now.temp_C}°C</p>
+<p>${now.weatherDesc[0].value}</p>
+
+</div>
+
+`
+
+}
+
+}
+
+/* INIT */
+
+news.render()
+store.render()
+cart.render()
+community.render()
+
+</script>
+
+</body>
+</html>
